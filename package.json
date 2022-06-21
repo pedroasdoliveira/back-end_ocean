@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "start:dev": "node index.js --watch"
+    "start:dev": "node index.js --watch",
+    "dev": "nodemon index.js --watch"
   },
   "keywords": [],
   "author": "",
