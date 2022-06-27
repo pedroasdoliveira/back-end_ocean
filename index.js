@@ -1,50 +1,78 @@
 const express = require("express");
-const app = express();
+const { MongoClient, ObjectId } = require("mongodb")
 
-app.use(express.json())
+const url = "mongodb://localhost:27017";
+const dbName = "ocean_project";
 
-app.get("/", function (req, res) {
-  res.send("Hello World");
-});
+async function main() {
+  console.log("Conectando ao banco de dados...")
 
-const herois = ["Mulher-Maravilha", "Superman", "Batman"];
+  const client = await MongoClient.connect(url);
 
-app.get("/herois", function (req, res) {
-  res.send(herois.filter(Boolean));
-});
+  const db = client.db(dbName)
 
-app.get('/herois/:id', function (req, res) {
-  const id = req.params.id;
-  const item = herois[id - 1];
+  const collection = db.collection("herois")
 
-  res.send(item);
-})
+  const app = express();
 
-app.post("/herois", function (req, res) {
-  const item = req.body.nome
-  herois.push(item)
+  app.use(express.json());
 
-  console.log(req.body)
-  res.send("Item inserido com sucesso")
-});
+  app.get("/", function (req, res) {
+    res.send("Hello World");
+  });
 
-app.put('/herois/:id', function (req, res) {
-  const id = req.params.id;
-  const item = req.body.nome;
+  const herois = ["Mulher-Maravilha", "Superman", "Batman"];
 
-  herois[id - 1] = item
+  app.get("/herois", async function (req, res) {
+    const documents = await collection.find().toArray()
+    
+    res.send(documents);
+  });
 
-  res.send("Item atualizado")
-})
+  app.get("/herois/:id", async function (req, res) {
+    const id = req.params.id;
 
-app.delete('/herois/:id', function (req, res) {
-  const id = req.params.id;
+    const item = await collection.findOne({ _id: new ObjectId(id) });
 
-  delete herois[id - 1]
+    res.send(item);
+  });
 
-  res.send('Item removido com sucesso')
-})
+  app.post("/herois", async function (req, res) {
+    const item = req.body;
 
-app.listen(3000, () =>
-  console.log("Servidor rodando em http://localhost:3000")
-);
+    await collection.insertOne(item)
+
+    res.send(item);
+  });
+
+  app.put("/herois/:id", async function (req, res) {
+    const id = req.params.id;
+
+    const item = req.body;
+
+    await collection.updateOne(
+      {
+        _id: new ObjectId(id)
+      },
+      {
+        $set: item
+      }
+    )
+
+    res.send(item);
+  });
+
+  app.delete("/herois/:id", async function (req, res) {
+    const id = req.params.id;
+
+    await collection.deleteOne({_id: new ObjectId(id)})
+
+    res.send("Item removido com sucesso");
+  });
+
+  app.listen(3000, () =>
+    console.log("Servidor rodando em http://localhost:3000")
+  );
+}
+
+main();
